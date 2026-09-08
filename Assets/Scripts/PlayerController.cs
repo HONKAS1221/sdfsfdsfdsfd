@@ -7,7 +7,7 @@ public class PlayerController : MonoBehaviour
 {
 	private CharacterInput controls; // Our controls we defined
     private Vector3 velocity; // To hold our current velocity
-    private Vector2 move; // To hold our move
+    public Vector2 move; // To hold our move
     
 
     private CharacterController controller; // Character controller
@@ -20,11 +20,13 @@ public class PlayerController : MonoBehaviour
     public Transform ground; // Ground check empty goes in here
     public float distanceToGround = 0.4f; // How close the ground needs to be to register
     public LayerMask groundMask; // What layer is ground?
-	
+    private WallRunning wallRun; // Wallrunning script
+
     void Awake()
     {
 		controls = new CharacterInput();
 		controller = GetComponent<CharacterController>();
+        wallRun = GetComponent<WallRunning>();
     }
 
     void Update()
@@ -36,11 +38,22 @@ public class PlayerController : MonoBehaviour
 
     private void Grav()
     {
-		if (isGrounded() && velocity.y < 0){
+        // wallrunning gravity
+        if (wallRun != null && wallRun.isWallrunning)
+        { 
+            velocity.y = 0f; // If wallrunning, set gravity to 0
+        }
+        // normal gravity
+        else if (isGrounded() && velocity.y < 0)
+        {
 			velocity.y = -2f;
 		}
-		
-		velocity.y += gravity * Time.deltaTime;
+        // Air gravity
+        else
+        {
+            velocity.y += gravity * Time.deltaTime;
+        }
+
 		controller.Move(velocity * Time.deltaTime);
     }
     
@@ -80,6 +93,6 @@ public class PlayerController : MonoBehaviour
 
     void OnDisable()
     {
-		controls.Disable();
+		controls.Disable(); 
     }
 }
