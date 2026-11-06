@@ -8,6 +8,13 @@ public class WallRunning : MonoBehaviour
     [Header("Wallrunning")] // header for wallrunning settings
     public LayerMask whatIsWall; // layer mask for what is considered a wall
     public LayerMask whatIsGround; // layer mask for what is considered a floor/ground
+
+    //wallrunning jump
+    public float wallRunJumpUpForce = 5f; // force applied to the player when jumping off a wall
+    public float wallJumpSideForce = 5f; // force applied to the player when jumping off a wall to the side
+    public float exitWallTime = 0.2f; // time the player has to wait before being able to wallrun again after jumping off a wall
+    private float exitWallTimer; // is the player in the exit wall timer state?
+
     public float wallRunForce = 10f; // force applied to the player when wallrunning
     public float maxWallRunTime = 3f; // maximum time the player can wallrun
     public float wallRunTimer;// timer for how long the player has been wallrunning
@@ -65,19 +72,22 @@ public class WallRunning : MonoBehaviour
     private void StateMachine()
     {
         // getting inputs
-        if (pm != null)
+        if (pm != null) 
         {
             horizontalInput = pm.move.x; // get the horizontal input from the player
             verticalInput = pm.move.y; // get the vertical input from the player
         }
 
         // State 1 - Wallrunning
-        if ((wallLeft || wallRight) && verticalInput > 0 && AboveGround()) // if there is a wall to the left or right, the player is moving forward, and the player is above the ground
+        if (exitWallTime > 0) exitWallTime -= Time.deltaTime; // if the exit wall timer is greater than 0, decrement the exit wall timer
+        if ((wallLeft || wallRight) && verticalInput > 0 && AboveGround() && exitWallTimer <= 0) // if there is a wall to the left or right, the player is moving forward, and the player is above the ground
         {
             if (!isWallrunning)
             {
                 Startwallrun();
             }
+
+            if (Keyboard.current.spaceKey.wasPressedThisFrame) WallJump();
 
            if (wallRunTimer > 0) // if the wallrun timer is greater than 0, decrement the wallrun timer
             {
@@ -124,6 +134,14 @@ public class WallRunning : MonoBehaviour
     private void StopWallRun()
     {
         isWallrunning = false; // set wallrunning to false
+    }
+
+    private void WallJump()
+    {
+        StopWallRun(); // stop wallrunning
+        exitWallTimer = exitWallTime; // set the exit wall timer to the exit wall time
+        Vector3 wallNormal = wallRight ? rightWallHit.normal : leftWallHit.normal; // if there is a wall to the right, use the right wall normal, otherwise use the left wall normal
+        pm.LaunchFromWall(Vector3.up * wallRunJumpUpForce + wallNormal * wallJumpSideForce);
     }
 
 }

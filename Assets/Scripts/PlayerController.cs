@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 public class PlayerController : MonoBehaviour
 {
 	private CharacterInput controls; // Our controls we defined
-    private Vector3 velocity; // To hold our current velocity
+    private Vector3 velocity; // To hold our current velocity   
     public Vector2 move; // To hold our move
     
 
@@ -21,6 +21,7 @@ public class PlayerController : MonoBehaviour
     public float distanceToGround = 0.4f; // How close the ground needs to be to register
     public LayerMask groundMask; // What layer is ground?
     private WallRunning wallRun; // Wallrunning script
+    private Climbing climbing;
 
     void Awake()
     {
@@ -39,28 +40,40 @@ public class PlayerController : MonoBehaviour
     private void Grav()
     {
         // wallrunning gravity
-        if (wallRun != null && wallRun.isWallrunning)
+        if ((wallRun != null && wallRun.isWallrunning) || (climbing != null && climbing.isClimbing))
         { 
             velocity.y = 0f; // If wallrunning, set gravity to 0
         }
         // normal gravity
         else if (isGrounded() && velocity.y < 0)
         {
-			velocity.y = -2f;
+			velocity.y = 0f;
 		}
         // Air gravity
         else
         {
             velocity.y += gravity * Time.deltaTime;
         }
+      
+        climbing = GetComponent<Climbing>();
+        controller.Move(velocity * Time.deltaTime);
 
-		controller.Move(velocity * Time.deltaTime);
+        
+        {
+            velocity.x = Mathf.MoveTowards(velocity.x, 0f, airDrag * Time.deltaTime);
+            velocity.z = Mathf.MoveTowards(velocity.z, 0f, airDrag * Time.deltaTime);
+        }
     }
     
-
-    private bool isGrounded()
+    public float airDrag = 15f; // Drag applied to the player when in the air
+    public bool isGrounded()
     {
 		return Physics.CheckSphere(ground.position, distanceToGround, groundMask);
+    }
+
+    public void LaunchFromWall(Vector3 launchVelocity)
+    {
+        velocity = launchVelocity;
     }
 
     private void PlayerMovement()
@@ -95,4 +108,5 @@ public class PlayerController : MonoBehaviour
     {
 		controls.Disable(); 
     }
+
 }
